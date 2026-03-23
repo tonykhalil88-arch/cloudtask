@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchTasks, createTask, updateTask, deleteTask } from './api/tasks';
 import { Plus, Trash2, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import './App.css';
 
 const STATUS_ICONS = {
@@ -147,19 +148,31 @@ export default function App() {
     queryFn: () => fetchTasks(filter !== 'all' ? { status: filter } : {}),
   });
 
-  const addMutation = useMutation({
+const addMutation = useMutation({
     mutationFn: createTask,
-    onSuccess: () => queryClient.invalidateQueries(['tasks']),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['tasks']);
+      toast.success('Task created! 🎯');
+    },
+    onError: () => toast.error('Failed to create task'),
   });
 
-  const updateMutation = useMutation({
+const updateMutation = useMutation({
     mutationFn: ({ id, ...data }) => updateTask(id, data),
-    onSuccess: () => queryClient.invalidateQueries(['tasks']),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['tasks']);
+      toast.success('Task updated! ✏️');
+    },
+    onError: () => toast.error('Failed to update task'),
   });
 
-  const deleteMutation = useMutation({
+const deleteMutation = useMutation({
     mutationFn: deleteTask,
-    onSuccess: () => queryClient.invalidateQueries(['tasks']),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['tasks']);
+      toast.success('Task deleted 🗑️');
+    },
+    onError: () => toast.error('Failed to delete task'),
   });
 
   const filters = ['all', 'todo', 'in_progress', 'done'];
@@ -177,17 +190,47 @@ export default function App() {
         background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
         padding: '24px 32px', color: 'white'
       }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+<div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 800 }}>☁️ CloudTask</h1>
           <p style={{ margin: '4px 0 16px', opacity: 0.85, fontSize: '14px' }}>
             Serverless task manager · Built on AWS
           </p>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+
+          {/* AWS Service Badges */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
             {['S3', 'Lambda', 'RDS', 'API Gateway', 'VPC'].map(s => (
               <span key={s} style={{
                 background: 'rgba(255,255,255,0.2)', borderRadius: '999px',
                 padding: '3px 12px', fontSize: '12px', fontWeight: 600
               }}>{s}</span>
+            ))}
+          </div>
+
+          {/* Stats Bar */}
+          <div style={{
+            display: 'flex', gap: '12px', flexWrap: 'wrap'
+          }}>
+            {[
+              { label: 'Total Tasks',  value: counts.all,         emoji: '📋', bg: 'rgba(255,255,255,0.15)' },
+              { label: 'To Do',        value: counts.todo,        emoji: '⏰', bg: 'rgba(255,255,255,0.15)' },
+              { label: 'In Progress',  value: counts.in_progress, emoji: '⚡', bg: 'rgba(255,255,255,0.15)' },
+              { label: 'Done',         value: counts.done,        emoji: '✅', bg: 'rgba(255,255,255,0.15)' },
+            ].map(stat => (
+              <div key={stat.label} style={{
+                background: stat.bg,
+                borderRadius: '12px',
+                padding: '10px 18px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                minWidth: '110px'
+              }}>
+                <span style={{ fontSize: '20px' }}>{stat.emoji}</span>
+                <div>
+                  <div style={{ fontSize: '20px', fontWeight: 800, lineHeight: 1 }}>{stat.value}</div>
+                  <div style={{ fontSize: '11px', opacity: 0.85, marginTop: '2px' }}>{stat.label}</div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
